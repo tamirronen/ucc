@@ -29,6 +29,7 @@ UCC_CLASS_INIT_FUNC(ucc_tl_ucp_team_t, ucc_base_context_t *tl_context,
 
 UCC_CLASS_CLEANUP_FUNC(ucc_tl_ucp_team_t)
 {
+    ucc_base_team_cleanup(&self->super.super);
     tl_info(self->super.super.context->lib, "finalizing tl team: %p", self);
 }
 

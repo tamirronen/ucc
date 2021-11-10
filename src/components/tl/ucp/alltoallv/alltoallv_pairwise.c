@@ -11,17 +11,38 @@
 #include "utils/ucc_math.h"
 #include "utils/ucc_coll_utils.h"
 #include "tl_ucp_sendrecv.h"
+#include "components/topo/ucc_ta.h"
 
-static inline ucc_rank_t get_recv_peer(ucc_rank_t rank, ucc_rank_t size,
-                                       ucc_rank_t step)
+typedef ucc_rank_t (*get_peer_f)(ucc_rank_t rank, ucc_rank_t size,
+                                 ucc_rank_t step,
+                                 ucc_ta_comm_stage_data_t *ta_stage);
+
+static ucc_rank_t get_sequential_recv_peer(ucc_rank_t rank, ucc_rank_t size,
+                                           ucc_rank_t step,
+                                           ucc_ta_comm_stage_data_t *ta_stage)
 {
     return (rank + step) % size;
 }
 
-static inline ucc_rank_t get_send_peer(ucc_rank_t rank, ucc_rank_t size,
-                                       ucc_rank_t step)
+static ucc_rank_t get_sequential_send_peer(ucc_rank_t rank, ucc_rank_t size,
+                                           ucc_rank_t step,
+                                           ucc_ta_comm_stage_data_t *ta_stage)
 {
     return (rank - step + size) % size;
+}
+
+static ucc_rank_t get_pattern_recv_peer(ucc_rank_t  rank, ucc_rank_t size,
+                                        ucc_rank_t step,
+                                        ucc_ta_comm_stage_data_t *ta_stage)
+{
+    return ta_stage->src_comm_seq[step];
+}
+
+static ucc_rank_t get_pattern_send_peer(ucc_rank_t  rank, ucc_rank_t size,
+                                        ucc_rank_t step,
+                                        ucc_ta_comm_stage_data_t *ta_stage)
+{
+    return ta_stage->dst_comm_seq[step];
 }
 
 ucc_status_t ucc_tl_ucp_alltoallv_pairwise_progress(ucc_coll_task_t *coll_task)
@@ -38,6 +59,14 @@ ucc_status_t ucc_tl_ucp_alltoallv_pairwise_progress(ucc_coll_task_t *coll_task)
     ucc_rank_t         peer;
     int                posts, nreqs;//, count_stride, displ_stride;
     size_t             rdt_size, sdt_size, data_size, data_displ;
+    ucc_ta_comm_stage_data_t *ta_stage = task->super.ta_stage;
+    get_peer_f get_recv_peer = get_sequential_recv_peer;
+    get_peer_f get_send_peer = get_sequential_send_peer;
+
+    if (ta_stage != NULL) {
+        get_recv_peer = get_pattern_recv_peer;
+        get_send_peer = get_pattern_send_peer;
+    }
 
     posts    = UCC_TL_UCP_TEAM_LIB(team)->cfg.alltoallv_pairwise_num_posts;
     nreqs    = (posts > gsize || posts == 0) ? gsize : posts;
@@ -48,7 +77,8 @@ ucc_status_t ucc_tl_ucp_alltoallv_pairwise_progress(ucc_coll_task_t *coll_task)
         ucp_worker_progress(UCC_TL_UCP_TEAM_CTX(team)->ucp_worker);
         while ((task->recv_posted < gsize) &&
                ((task->recv_posted - task->recv_completed) < nreqs)) {
-            peer       = get_recv_peer(grank, gsize, task->recv_posted);
+            peer       = get_recv_peer(grank, gsize, task->recv_posted,
+                                       ta_stage);
             data_size =
                 ucc_coll_args_get_count(
                     &TASK_ARGS(task), TASK_ARGS(task).dst.info_v.counts, peer) *
@@ -64,7 +94,8 @@ ucc_status_t ucc_tl_ucp_alltoallv_pairwise_progress(ucc_coll_task_t *coll_task)
         }
         while ((task->send_posted < gsize) &&
                ((task->send_posted - task->send_completed) < nreqs)) {
-            peer       = get_send_peer(grank, gsize, task->send_posted);
+            peer       = get_send_peer(grank, gsize, task->send_posted,
+                                       ta_stage);
             data_size =
                 ucc_coll_args_get_count(
                     &TASK_ARGS(task), TASK_ARGS(task).src.info_v.counts, peer) *

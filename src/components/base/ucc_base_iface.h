@@ -40,6 +40,14 @@ enum {
     UCC_BASE_LIB_FLAG_SERVICE_TEAM_REQUIRED = UCC_BIT(2)
 };
 
+/* Topology aware calculation type cache */
+typedef struct ucc_ta_coll_comm_pattern ucc_ta_coll_comm_pattern_t;
+enum {
+    UCC_BASE_PATTERN_ALLTOALL,
+    UCC_BASE_PATTERN_ALLREDUCE,
+    UCC_BASE_PATTERN_LAST
+};
+
 typedef struct ucc_base_lib_attr_t {
     ucc_lib_attr_t attr;
     uint64_t       flags;
@@ -109,7 +117,10 @@ typedef struct ucc_base_team_params {
 typedef struct ucc_base_team {
     ucc_base_context_t    *context;
     ucc_base_team_params_t params;
+    ucc_ta_coll_comm_pattern_t *ta_pattern[UCC_BASE_PATTERN_LAST];
 } ucc_base_team_t;
+
+void ucc_base_team_cleanup(ucc_base_team_t *base_team);
 
 typedef struct ucc_base_team_iface {
     ucc_status_t (*create_post)(ucc_base_context_t *context,

@@ -78,6 +78,8 @@ noinst_HEADERS =                      \
 	components/tl/ucc_tl_log.h        \
 	components/mc/base/ucc_mc_base.h  \
 	components/mc/ucc_mc_log.h        \
+	components/topo/ucc_ta.h          \
+	components/topo/ucc_ta_context.h  \
 	coll_patterns/recursive_knomial.h \
 	coll_patterns/sra_knomial.h
 
@@ -113,6 +115,8 @@ libucc_la_SOURCES =                   \
 	components/base/ucc_base_iface.c  \
 	components/cl/ucc_cl.c            \
 	components/tl/ucc_tl.c            \
-	components/mc/base/ucc_mc_base.c
+	components/mc/base/ucc_mc_base.c  \
+	components/topo/ucc_ta.c          \
+	components/topo/ucc_ta_context.c
 
 libucc_ladir = $(includedir)

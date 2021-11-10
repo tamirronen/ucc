@@ -7,6 +7,7 @@
 #include "ucc_context.h"
 #include "components/cl/ucc_cl.h"
 #include "components/tl/ucc_tl.h"
+#include "components/topo/ucc_ta_context.h"
 #include "utils/ucc_malloc.h"
 #include "utils/ucc_log.h"
 #include "utils/ucc_list.h"
@@ -589,6 +590,13 @@ ucc_status_t ucc_context_create(ucc_lib_h lib,
         }
         ucc_assert(ctx->addr_storage.rank == params->oob.oob_ep);
     }
+
+    status = ucc_ta_context_create(config, ctx);
+    if (UCC_OK != status) {
+        ucc_error("failed to create ta context"); /* !!! fix use auto */
+        goto error_ctx_create;
+    }
+
     if (config->internal_oob) {
         if (params->mask & UCC_CONTEXT_PARAM_FIELD_OOB) {
             ucc_base_team_params_t t_params;
@@ -707,6 +715,11 @@ ucc_status_t ucc_context_destroy(ucc_context_t *context)
         }
         tl_lib->iface->context.destroy(&tl_ctx->super);
     }
+
+    if (UCC_OK != ucc_ta_context_destroy(context->ta_ctx)) { /* !!! where topo is destroyed*/
+        ucc_error("failed to free ta context");
+    }
+
     ucc_progress_queue_finalize(context->pq);
     ucc_free(context->addr_storage.storage);
     ucc_free(context->all_tls.names);

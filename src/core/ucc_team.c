@@ -474,6 +474,7 @@ static ucc_status_t ucc_team_destroy_single(ucc_team_h team)
 
     ucc_team_topo_cleanup(team->topo);
 
+
     if (team->contexts[0]->service_team) {
         ucc_internal_oob_finalize(&team->bp.params.oob);
     }

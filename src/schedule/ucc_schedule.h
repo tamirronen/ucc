@@ -22,6 +22,7 @@ typedef enum {
     UCC_EVENT_LAST
 } ucc_event_t;
 
+typedef struct ucc_ta_comm_stage_data ucc_ta_comm_stage_data_t;
 typedef struct ucc_coll_task ucc_coll_task_t;
 typedef struct ucc_base_team ucc_base_team_t;
 typedef ucc_status_t (*ucc_task_event_handler_p)(ucc_coll_task_t *parent,
@@ -61,6 +62,7 @@ typedef struct ucc_coll_task {
     ucc_ev_t                    *ev;
     void                        *ee_task;
     ucc_coll_task_t             *triggered_task;
+    ucc_ta_comm_stage_data_t    *ta_stage;
     union {
         /* used for st & locked mt progress queue */
         ucc_list_link_t              list_elem;

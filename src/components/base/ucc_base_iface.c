@@ -1,6 +1,7 @@
 #include "ucc_base_iface.h"
 #include "utils/ucc_malloc.h"
 #include "utils/ucc_log.h"
+#include "components/topo/ucc_ta.h"
 
 ucc_config_field_t ucc_base_config_table[] = {
     {"LOG_LEVEL", "warn",
@@ -55,4 +56,14 @@ ucc_status_t ucc_base_config_read(const char *full_prefix,
         *config = cfg;
     }
     return status;
+}
+
+void ucc_base_team_cleanup(ucc_base_team_t *base_team)
+{
+    for (int i = 0; i < UCC_BASE_PATTERN_LAST; ++i) {
+        if (base_team->ta_pattern[i] != NULL) {
+            ucc_ta_pattern_destroy(base_team->ta_pattern[i]);
+            base_team->ta_pattern[i] = NULL;
+        }
+    }
 }
